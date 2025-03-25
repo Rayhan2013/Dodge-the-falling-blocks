@@ -1,1 +1,2 @@
-This file has been deleted
+This game is safe.
+Copyright 2025 by Rayhan Sonic Studios
