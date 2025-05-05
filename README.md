@@ -1,4 +1,5 @@
 Wecome to dodge the falling blocks where the object of the game is to dodge the falling blocks.
+NEW: There's now a website for the game.
 
 NOTE: in single player mode you get points every 5 blocks that fall to the ground.
 
