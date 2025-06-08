@@ -2,7 +2,7 @@ Wecome to dodge the falling blocks where the object of the game is to dodge the 
 
 NEW: There's now a website for the game.
 
-NOTE: in single player mode you get points every 5 blocks that fall to the ground.
+Website link: https://rayhan2013.github.io/dodge-the-falling-blocks-website-version/
 
 NOTE: to play the game make sure you dowload the files and they are in the same folder.
 
