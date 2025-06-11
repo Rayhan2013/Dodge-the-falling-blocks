@@ -1,4 +1,4 @@
-Wecome to dodge the falling blocks where the object of the game is to dodge the falling blocks.
+Welcome to dodge the falling blocks where the object of the game is to dodge the falling blocks.
 
 NEW: There's now a website for the game.
 
