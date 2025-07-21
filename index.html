@@ -203,8 +203,8 @@ body.mobile #dpad1, body.mobile #dpad2 {
           dpad1 = document.getElementById("dpad1"),
           dpad2 = document.getElementById("dpad2"),
           bgMusic = document.getElementById("bgMusic");
-      
-   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     
     if (isMobile) {
@@ -219,14 +219,19 @@ body.mobile #dpad1, body.mobile #dpad2 {
     winMessage = "";
 
     // Canvas setup
-    canvas.width = 600;
-    canvas.height = 400;
+     function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+playArea.width = Math.min(500, canvas.width * 0.8);
+playArea.x = (canvas.width - playArea.width) / 2;
+  }
+ let playArea = { x: 0, width: 0 };
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);  
     const AFK_TIME_LIMIT = 3000,
-          originalPlayAreaWidth = 500,
+          originalPlayAreaWidth = window.innerWidth * 0.9,
           gravity = 0.4,
           jumpPower = -8;
-    let playArea = { x: 50, width: originalPlayAreaWidth };
-
     const players = [
       { x:100,y:300,w:20,h:20,color:"red",    keyLeft:"a", keyRight:"d", keyJump:"w", alive:false, velocityY:0, lastActive:Date.now() },
       { x:270,y:300,w:20,h:20,color:"yellow", keyLeft:"j", keyRight:"l", keyJump:"i", alive:false, velocityY:0, lastActive:Date.now() },
@@ -256,6 +261,7 @@ body.mobile #dpad1, body.mobile #dpad2 {
 
   // ==== NEW: hide intro & device prompt ====
 setTimeout(() => {
+  resizeCanvas();
   introScreen.style.display = "none";
   
   // Checking for mobile based on user agent
@@ -295,18 +301,19 @@ setTimeout(() => {
         e.preventDefault();
       });
     });
-
     // Start game
     function startGame(playersCount) {
       playMusic();
       numPlayers = playersCount;
       winMessage = "";
+      playArea.width = originalPlayAreaWidth;
+       playArea.x = (canvas.width - playArea.width) / 2;
       if (numPlayers === 1) { score = 0; groundBlockCount = 0; }
       players.forEach((pl, i) => {
        pl.alive = i < numPlayers && (!isMobile || i < 2);
         if (pl.alive) {
           pl.x = (i+1)*(canvas.width/(numPlayers+1));
-          pl.y = 300; pl.velocityY = 0; pl.lastActive = Date.now();
+          pl.y = canvas.height - pl.h - 20; pl.velocityY = 0; pl.lastActive = Date.now();
         }
       });
       menu.style.display = "none";
@@ -358,19 +365,23 @@ setTimeout(() => {
       players.forEach((pl, i) => {
         if (!pl.alive) return;
         const idx = i+1;
+         const groundY = canvas.height - pl.h - 20;
         if (isMobile && idx<=2) {
           if (touchState[idx].left  && pl.x>playArea.x)                      pl.x-=7;
           if (touchState[idx].right && pl.x+pl.w<playArea.x+playArea.width) pl.x+=7;
-          if (touchState[idx].up    && pl.y>=300)                            pl.velocityY=jumpPower;
-        }
+          if (touchState[idx].up    && pl.y >= groundY) pl.velocityY = jumpPower;
+          }
         else if (!isMobile) {
           if (keys[pl.keyLeft]  && pl.x>playArea.x)                      pl.x-=7;
           if (keys[pl.keyRight] && pl.x+pl.w<playArea.x+playArea.width) pl.x+=7;
-          if (keys[pl.keyJump]  && pl.y>=300)                            pl.velocityY=jumpPower;
+          if (keys[pl.keyJump] && pl.y >= groundY) pl.velocityY = jumpPower;
         }
         pl.velocityY += gravity;
         pl.y += pl.velocityY;
-        if (pl.y>300) { pl.y=300; pl.velocityY=0; }
+        if (pl.y > groundY) {
+         pl.y = groundY;
+        pl.velocityY = 0;
+       }
       });
     }
 
@@ -470,12 +481,21 @@ setTimeout(() => {
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.fillStyle="rgba(255,255,255,0.2)";
       ctx.fillRect(playArea.x,0,playArea.width,canvas.height);
+     //draw walls
+      const wallWidth = 1;
+  ctx.fillStyle = "white";
+  // Left wall
+  ctx.fillRect(playArea.x, 0, wallWidth, canvas.height);
+  // Right wall
+  ctx.fillRect(playArea.x + playArea.width - wallWidth, 0, wallWidth, canvas.height);
+      // Draw players
       players.forEach(pl => {
         if (pl.alive) {
           ctx.fillStyle = pl.color;
           ctx.fillRect(pl.x,pl.y,pl.w,pl.h);
         }
       });
+     // Draw blocks
       blocks.forEach(b => {
         ctx.fillStyle = b.color;
         ctx.fillRect(b.x,b.y,b.width,b.height);
@@ -521,7 +541,19 @@ document.getElementById("menuBtn").addEventListener("click", () => {
   returnToMenu();
 }); 
     document.addEventListener("click", playMusic, { once:true });
-    setInterval(createBlock, 1000);
+    // Adjust block spawn rate based on canvas width
+const baseInterval = 1000; // 1 block per second on small screen
+let blockInterval = baseInterval;
+
+if (canvas.width > 800) {
+  blockInterval = 500; // 2 blocks per second
+} 
+if (canvas.width > 1200) {
+  blockInterval = 300; // 3 blocks per second
+}
+
+// Create blocks based on screen size
+setInterval(createBlock, blockInterval);
     (function loop(){
       if(gameRunning){
         movePlayers();
