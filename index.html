@@ -14,11 +14,13 @@
       padding: 0;
     }
     canvas {
-      background-color: black;
-      display: none;
-      margin: 20px auto;
-      border: 5px solid white;
-    }
+  background-color: black;
+  display: none;
+  margin: 0 auto;
+  border: 5px solid white;
+  max-width: 100%;
+  height: auto;
+}
     #menu {
       display: flex;
       flex-direction: column;
@@ -43,19 +45,6 @@
       color: white;
       margin-top: 10px;
       white-space: pre-line;
-    }
-    /* Music toggle */
-    #toggleMusicBtn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      font-size: 20px;
-      padding: 10px 20px;
-      border: none;
-      cursor: pointer;
-      background-color: white;
-      border-radius: 10px;
-      z-index: 2;
     }
     /* Intro */
     #introScreen {
@@ -103,7 +92,44 @@
     #controlsOverlay li { margin: 10px 0; font-size: 20px; }
 
 ```
-/* Base styles for dpad to hide them by default */
+.musicControls {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.9);
+  padding: 10px;
+  border-radius: 10px;
+  z-index: 9999;
+}
+.musicControls .volumeWrapper {
+  display: flex;
+  align-items: center;
+  background-color: white;  
+  padding: 5px 10px;       
+  border-radius: 10px;     
+  gap: 5px;
+  height: 35px;            
+  margin-top: 10px;        /* moves it slightly down */
+}
+.musicControls .volumeWrapper input[type="range"] {
+  width: 100px;            
+  background: transparent;  
+  cursor: pointer;
+  height: 15px;            /* slightly smaller slider track */
+}
+  #volumePercentage {
+  font-size: 12px;
+  color: black;
+  min-width: 25px;
+  text-align: right;
+}
+#playPauseBtn {
+  margin-right: 2px; /* reduces space between play/pause and toggle music */
+}
+  /* Base styles for dpad to hide them by default */
 .dpad {
   position: fixed;
   bottom: 20px;   /* Position at the bottom */
@@ -114,7 +140,6 @@
   gap: 10px;
   z-index: 10;
 }
-
 body.mobile .dpad {
   display: flex; /* Show D-Pad in mobile mode */
 }
@@ -150,8 +175,9 @@ body.mobile #dpad1, body.mobile #dpad2 {
   </div>
  
   <!-- moblie restart and menu buttons -->
-  <div id="endScreen" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
+  <div id="gameOverUI" style="display:none; position: fixed; top: 50%; left: 50%; 
+  transform: translate(-50%, -50%); text-align: center; color: white; z-index: 1000;">
+  <div id="gameOverText" style="margin-bottom: 20px; font-size: 24px; font-weight: bold;"></div>
   <button id="restartBtn" style="margin: 10px; padding: 10px 20px; font-size: 18px;">Restart</button>
   <button id="menuBtn" style="margin: 10px; padding: 10px 20px; font-size: 18px;">Menu</button>
 </div>
@@ -170,29 +196,47 @@ body.mobile #dpad1, body.mobile #dpad2 {
 
   <!-- Player 1 D-Pad -->
 <div id="dpad1" class="dpad">
-  <button data-dir="left" data-player="1">◀</button>
-  <button data-dir="up" data-player="1">▲</button>
-  <button data-dir="right" data-player="1">▶</button>
+  <div style="display:flex; flex-direction: column; align-items:center;">
+    <button data-dir="up" data-player="1">▲</button>
+    <div style="display:flex; gap:10px;">
+      <button data-dir="left" data-player="1">◀</button>
+      <button data-dir="right" data-player="1">▶</button>
+    </div>
+  </div>
 </div>
 
 <!-- Player 2 D-Pad -->
 <div id="dpad2" class="dpad">
-  <button data-dir="left" data-player="2">◀</button>
-  <button data-dir="up" data-player="2">▲</button>
-  <button data-dir="right" data-player="2">▶</button>
+  <div style="display:flex; flex-direction: column; align-items:center;">
+    <button data-dir="up" data-player="2">▲</button>
+    <div style="display:flex; gap:10px;">
+      <button data-dir="left" data-player="2">◀</button>
+      <button data-dir="right" data-player="2">▶</button>
+    </div>
+  </div>
 </div>
 
 
   <!-- Canvas & UI -->
-
 <canvas id="gameCanvas"></canvas>
-  <div id="message"></div>
+  <div id="message">Waiting for a player to die, then shows how they die</div>
   <audio id="bgMusic" loop>
     <source src="BackOnTrack.mp3" type="audio/mpeg">
   </audio>
-  <button id="toggleMusicBtn" onclick="toggleMusic()">🔊 Toggle Music</button>
+  <div class="musicControls">
+  <div class="volumeWrapper">
+  <!-- Volume Control FIRST -->
+  <label for="volumeSlider" style="font-size: 12px;">Volume</label>
+  <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" style="width: 120px;">
+  <span id="volumePercentage">100%</span>
+  </div>
+  <!-- Play/Pause SECOND -->
+  <button id="playPauseBtn" onclick="togglePlayPause()">▶️ Play</button>
 
-  <script>
+  <!-- Toggle Music LAST -->
+  <button id="toggleMusicBtn" onclick="toggleMusic()">🔊 Toggle Music</button>
+</div>
+<script>
     // Core elements & state
     const canvas = document.getElementById("gameCanvas"),
           ctx = canvas.getContext("2d"),
@@ -202,9 +246,44 @@ body.mobile #dpad1, body.mobile #dpad2 {
           threePlayerBtn = document.getElementById("threePlayerBtn"),
           dpad1 = document.getElementById("dpad1"),
           dpad2 = document.getElementById("dpad2"),
-          bgMusic = document.getElementById("bgMusic");
-    
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          bgMusic = document.getElementById("bgMusic"),
+          playPauseBtn = document.getElementById("playPauseBtn"),
+          volumeSlider = document.getElementById("volumeSlider"),
+          volumePercentage = document.getElementById("volumePercentage");
+    // Playlist setup
+const tracks = ["BackOnTrack.mp3","xStep.mp3"];
+let currentTrackIndex = 0;
+bgMusic.src = tracks[currentTrackIndex];
+bgMusic.load();
+function playCurrentTrack() {
+  bgMusic.play().catch(() => {});
+  playPauseBtn.innerText = "⏸ Pause";
+}
+
+function playNextTrack() {
+  currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+  bgMusic.src = tracks[currentTrackIndex];
+  bgMusic.load();
+  playCurrentTrack();
+}
+
+bgMusic.addEventListener("ended", playNextTrack);
+  // Play / Pause toggle
+function togglePlayPause() {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => {}); // Play, ignore errors
+    playPauseBtn.innerText = "⏸ Pause";
+  } else {
+    bgMusic.pause();
+    playPauseBtn.innerText = "▶️ Play";
+  }
+}
+// Volume slider
+volumeSlider.addEventListener("input", () => {
+  bgMusic.volume = volumeSlider.value;
+  volumePercentage.innerText = Math.round(volumeSlider.value * 100) + "%";
+});
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     
     if (isMobile) {
@@ -214,9 +293,12 @@ body.mobile #dpad1, body.mobile #dpad2 {
     gameRunning = false,
     score = 0,
     groundBlockCount = 0,
-    highScore = parseInt(localStorage.getItem("highScore")) || 0;
+    highScore = parseInt(localStorage.getItem("highScore")) || 0,
     blocks = [],
     winMessage = "";
+
+    const defaultMessage = "Waiting for a player to die, then shows how they die";
+    let messageTimeout;
 
     // Canvas setup
      function resizeCanvas() {
@@ -268,12 +350,21 @@ setTimeout(() => {
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (isMobileDevice) {
     document.body.classList.add("mobile"); // Add the mobile class for mobile-specific styles
-    threePlayerBtn.style.display = "none";  // Hide the 3 player button (optional for mobile)
+    threePlayerBtn.style.display = "none";  // Hide the 3 player button on mobile
     document.querySelector('button[onclick="toggleControls()"]').style.display = "none"; // Hide the show controls button on mobile
   } else {
     document.body.classList.remove("mobile"); // Remove the mobile class for desktop
   }
-  // Safely hide/show D-pads
+  const musicControls = document.querySelector('.musicControls');
+  if (musicControls) {
+  musicControls.style.display = 'flex';
+  musicControls.style.position = 'fixed';
+  musicControls.style.top = '20px';
+  musicControls.style.right = '20px';
+  musicControls.style.bottom = 'auto'; // override any bottom
+  musicControls.style.zIndex = '9999';
+    }
+    // Safely hide/show D-pads
   const dpads = document.querySelectorAll('.dpad');
   dpads.forEach(dpad => {
     dpad.style.display = isMobileDevice ? 'flex' : 'none';
@@ -303,33 +394,42 @@ setTimeout(() => {
     });
     // Start game
     function startGame(playersCount) {
+      resizeGameCanvas();
+      blocks = [];
+      setupBlockSpawnRate();
       playMusic();
       numPlayers = playersCount;
       winMessage = "";
-      playArea.width = originalPlayAreaWidth;
-       playArea.x = (canvas.width - playArea.width) / 2;
       if (numPlayers === 1) { score = 0; groundBlockCount = 0; }
       players.forEach((pl, i) => {
        pl.alive = i < numPlayers && (!isMobile || i < 2);
         if (pl.alive) {
-          pl.x = (i+1)*(canvas.width/(numPlayers+1));
+          pl.x = playArea.x + ((i + 1) * (playArea.width / (numPlayers + 1))) - (pl.w / 2);
           pl.y = canvas.height - pl.h - 20; pl.velocityY = 0; pl.lastActive = Date.now();
         }
       });
       menu.style.display = "none";
       canvas.style.display = "block";
       document.getElementById("message").innerText = "";
-      blocks = [];
-      playArea.width = originalPlayAreaWidth;
       gameRunning = true;
       bgMusic.play();  
-      document.getElementById("endScreen").style.display = "none";
+      document.getElementById("gameOverUI").style.display = "none";
+      const musicControls = document.querySelector('.musicControls');
+      if (musicControls){
+    musicControls.style.top = "20px";
+    musicControls.style.right = "20px";
+    musicControls.style.bottom = "auto";
+    musicControls.style.display = "flex";
+      } 
+      if (numPlayers > 1) {
+      showMessage(defaultMessage);
+     }
     } 
 
     // Block creation
     function createBlock() {
       if (!gameRunning) return;
-      const scale = playArea.width / originalPlayAreaWidth;
+      const scale = Math.max(0.5, Math.min(1.5, playArea.width / originalPlayAreaWidth));
       blocks.push({
         x: Math.random()*(playArea.width-50*scale)+playArea.x,
         y: -100,
@@ -387,14 +487,20 @@ setTimeout(() => {
 
     function moveBlocks() {
       const rem = [];
+      const blocksNeededForScore = Math.max(5, Math.floor(canvas.width / 500) * 5);
       blocks.forEach(b => {
         b.y += b.speed;
         if (b.y>canvas.height) {
           if (numPlayers===1) {
             groundBlockCount++;
-            if (groundBlockCount>=3) { score++; groundBlockCount=0; }
-          }
-        } else rem.push(b);
+           if (groundBlockCount >= blocksNeededForScore) {
+          score++;
+          groundBlockCount = 0;  // Reset the block count
+        }
+      }
+    } else {
+      rem.push(b);
+    } 
       });
       blocks = rem;
     }
@@ -409,14 +515,15 @@ setTimeout(() => {
             if (numPlayers===1) {
              saveHighScoreIfNeeded();
               if (isMobile) {
-  winMessage = "Game Over! Tap a button to continue.";
+  document.getElementById("gameOverText").innerText = "Game Over!\nTap a button to continue.";
 } else {
   winMessage = "GAME OVER\nPress R to restart, or M for menu.";
 }
-               if (isMobile) document.getElementById("endScreen").style.display = "block";
+              if (isMobile) 
+              document.getElementById("gameOverUI").style.display = "block";
               gameRunning = false;           
             } else {
-              document.getElementById("message").innerText = `${pl.color.toUpperCase()} DIED! ☠️`;
+              showMessage(`${pl.color.toUpperCase()} DIED (BLOCKS)! ☠️`);
             }
           }
         });
@@ -425,14 +532,15 @@ setTimeout(() => {
           if (numPlayers===1) {
             saveHighScoreIfNeeded();
             if (isMobile) {
-  winMessage = "Game Over! Tap a button to continue.";
+  document.getElementById("gameOverText").innerText = "Game Over!\nTap a button to continue.";
 } else {
   winMessage = "GAME OVER\nPress R to restart, or M for menu.";
 }
-            if (isMobile) document.getElementById("endScreen").style.display = "block"
+            if (isMobile) 
+            document.getElementById("gameOverUI").style.display = "block";
             gameRunning = false;
           } else {
-            document.getElementById("message").innerText = `${pl.color.toUpperCase()} DIED (WALL)! ☠️`;
+            showMessage(`${pl.color.toUpperCase()} DIED (WALL)! ☠️`);
           }
         }
       });
@@ -446,21 +554,28 @@ setTimeout(() => {
           if (numPlayers===1) {
             saveHighScoreIfNeeded();
             if (isMobile) {
-  winMessage = "Game Over! Tap a button to continue.";
+  document.getElementById("gameOverText").innerText = "Game Over!\nTap a button to continue.";
 } else {
   winMessage = "GAME OVER\nPress R to restart, or M for menu.";
 }
-            if (isMobile) document.getElementById("endScreen").style.display = "block";
+            if (isMobile) 
+            document.getElementById("gameOverUI").style.display = "block";
             gameRunning = false;
           } else {
-            document.getElementById("message").innerText = `${pl.color.toUpperCase()} DIED (AFK)! ☠️`;
+            showMessage(`${pl.color.toUpperCase()} DIED (AFK)! ☠️`);
           }
         }
       });
     }
 
     function shrinkWalls() {
-      if (numPlayers>1) playArea.width = Math.max(200, playArea.width - 0.5);
+      if (numPlayers > 1) {
+    // Base shrink speed per frame
+    let baseShrink = 0.5;
+    let speedMultiplier = canvas.width / 500; 
+    let shrinkAmount = baseShrink * speedMultiplier;
+    playArea.width = Math.max(200, playArea.width - shrinkAmount);
+     }
     }
 
     function checkOnePlayerLeft() {
@@ -468,12 +583,12 @@ setTimeout(() => {
       if (numPlayers>1 && alive.length===1 && gameRunning) {
         gameRunning = false;
         if (isMobile) {
-  winMessage = `${alive[0].color.toUpperCase()} WON! Tap a button to continue.`;
+  document.getElementById("gameOverText").innerText = `${alive[0].color.toUpperCase()} WON!\nTap a button to continue.`;
 } else {
   winMessage = `${alive[0].color.toUpperCase()} WON!\nPress R to restart, or M for menu.`;
 }
 
-      if (isMobile) document.getElementById("endScreen").style.display = "block";
+      if (isMobile) document.getElementById("gameOverUI").style.display = "block";
       }
     }
 
@@ -514,8 +629,8 @@ setTimeout(() => {
     }
 
     function resetGameState() {
-  document.getElementById("endScreen").style.display = "none";  
-  startGame(numPlayers);
+   document.getElementById("gameOverUI").style.display = "none";  
+   startGame(numPlayers);
 }
 
     function returnToMenu() {
@@ -523,7 +638,7 @@ setTimeout(() => {
       menu.style.display="flex";
       introScreen.style.display="none";
     if (isMobile) {
-  document.getElementById("endScreen").style.display = "none";
+    document.getElementById("gameOverUI").style.display = "none";
 }
     }
     function saveHighScoreIfNeeded() {
@@ -534,26 +649,60 @@ setTimeout(() => {
 } 
     // Game loop & scheduling
     document.getElementById("restartBtn").addEventListener("click", () => {
-  resetGameState();
+    document.getElementById("gameOverUI").style.display = "none";
+      resetGameState();
 });
 
 document.getElementById("menuBtn").addEventListener("click", () => {
+document.getElementById("gameOverUI").style.display = "none";
   returnToMenu();
 }); 
     document.addEventListener("click", playMusic, { once:true });
-    // Adjust block spawn rate based on canvas width
-const baseInterval = 1000; // 1 block per second on small screen
-let blockInterval = baseInterval;
+    let blockSpawnIntervalId;
 
-if (canvas.width > 800) {
-  blockInterval = 500; // 2 blocks per second
-} 
-if (canvas.width > 1200) {
-  blockInterval = 300; // 3 blocks per second
+function setupBlockSpawnRate() {
+  if (blockSpawnIntervalId) clearInterval(blockSpawnIntervalId);
+
+  const baseInterval = 1000;
+  let blockInterval = baseInterval;
+
+  if (canvas.width > 800) {
+    blockInterval = 500;
+  } 
+  if (canvas.width > 1200) {
+    blockInterval = 300;
+  }
+
+  blockSpawnIntervalId = setInterval(createBlock, blockInterval);
 }
+    window.addEventListener("resize", resizeGameCanvas);
+function resizeGameCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight * 0.93;
+  playArea.width = canvas.width * 0.9;
+  playArea.x = (canvas.width - playArea.width) / 2;
+  setupBlockSpawnRate();
+  repositionPlayers();
+}
+    function repositionPlayers() {
+  players.forEach((pl, i) => {
+    if (pl.alive) {
+      pl.x = playArea.x + ((i + 1) * (playArea.width / (numPlayers + 1))) - (pl.w / 2);
+    }
+  });
+}
+  function showMessage(text, duration = 3000) {
+  clearTimeout(messageTimeout);
+  const msgEl = document.getElementById("message");
+  msgEl.innerText = text;
 
-// Create blocks based on screen size
-setInterval(createBlock, blockInterval);
+  // If it's not the default, reset to default after time
+  if (text !== defaultMessage) {
+    messageTimeout = setTimeout(() => {
+      msgEl.innerText = defaultMessage;
+    }, duration);
+  }
+}
     (function loop(){
       if(gameRunning){
         movePlayers();
@@ -566,6 +715,6 @@ setInterval(createBlock, blockInterval);
       draw();
       requestAnimationFrame(loop);
    })();
-  </script>
+</script>
 </body>
 </html>
