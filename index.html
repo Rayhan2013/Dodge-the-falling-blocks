@@ -171,6 +171,7 @@ body.mobile #dpad1, body.mobile #dpad2 {
     <button onclick="startGame(1)">Single Player</button>
     <button onclick="startGame(2)">2 Players</button>
     <button id="threePlayerBtn" onclick="startGame(3)">3 Players</button>
+    <button onclick="toggleMusicCredits()">Music Credits</button>
     <button onclick="toggleControls()">Show Controls</button>
   </div>
  
@@ -183,7 +184,6 @@ body.mobile #dpad1, body.mobile #dpad2 {
 </div>
   
   <!-- Controls Overlay -->
-
   <div id="controlsOverlay">
     <h2>Player Controls</h2>
     <ul>
@@ -193,6 +193,18 @@ body.mobile #dpad1, body.mobile #dpad2 {
     </ul>
     <button onclick="toggleControls()">Close</button>
   </div>
+  
+  <!-- music credits -->
+  <div id="musicCreditsOverlay" style="display:none; position: absolute; top:0; left:0; width:100%; height:100vh; 
+     background-color: rgba(0,0,0,0.9); color:white; z-index: 4; flex-direction: column; align-items: center; justify-content: center;">
+  <h2>Music Credits</h2>
+  <ul style="list-style:none; text-align:left; font-size:20px;">
+    <li>BackOnTrack made by DJVI</li>
+    <li>xStep made by DJVI</li>
+    <li>New Adventure made by Matrika</li>
+  </ul>
+  <button onclick="toggleMusicCredits()">Close</button>
+</div>
 
   <!-- Player 1 D-Pad -->
 <div id="dpad1" class="dpad">
@@ -234,7 +246,7 @@ body.mobile #dpad1, body.mobile #dpad2 {
   <button id="playPauseBtn" onclick="togglePlayPause()">▶️ Play</button>
 
   <!-- Toggle Music LAST -->
-  <button id="toggleMusicBtn" onclick="toggleMusic()">🔊 Toggle Music</button>
+  <button id="toggleMusicBtn" onclick="playNextTrack()">⏭ Next Track</button>
 </div>
 <script>
     // Core elements & state
@@ -249,15 +261,24 @@ body.mobile #dpad1, body.mobile #dpad2 {
           bgMusic = document.getElementById("bgMusic"),
           playPauseBtn = document.getElementById("playPauseBtn"),
           volumeSlider = document.getElementById("volumeSlider"),
-          volumePercentage = document.getElementById("volumePercentage");
-    // Playlist setup
-const tracks = ["BackOnTrack.mp3","xStep.mp3"];
+          volumePercentage = document.getElementById("volumePercentage"),
+          musicCreditsOverlay = document.getElementById("musicCreditsOverlay");
+      // music credits
+  function toggleMusicCredits() {
+  if (musicCreditsOverlay.style.display === "flex") {
+    musicCreditsOverlay.style.display = "none";
+  } else {
+    musicCreditsOverlay.style.display = "flex";
+    musicCreditsOverlay.style.flexDirection = "column";
+  }
+}
+  // Playlist setup
+const tracks = ["BackOnTrack.mp3","xStep.mp3","New Adventure Matrika No Copyright Music.mp3"];
 let currentTrackIndex = 0;
 bgMusic.src = tracks[currentTrackIndex];
 bgMusic.load();
 function playCurrentTrack() {
   bgMusic.play().catch(() => {});
-  playPauseBtn.innerText = "⏸ Pause";
 }
 
 function playNextTrack() {
@@ -265,25 +286,42 @@ function playNextTrack() {
   bgMusic.src = tracks[currentTrackIndex];
   bgMusic.load();
   playCurrentTrack();
+  updatePlayPauseButton();
 }
 
 bgMusic.addEventListener("ended", playNextTrack);
-  // Play / Pause toggle
-function togglePlayPause() {
+// Update the play/pause button text based on current state
+function updatePlayPauseButton() {
   if (bgMusic.paused) {
-    bgMusic.play().catch(() => {}); // Play, ignore errors
+    playPauseBtn.innerText = "▶️ Play";
+  } else {
     playPauseBtn.innerText = "⏸ Pause";
+  }
+}
+  // Play / Pause toggle
+  function togglePlayPause() {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => {});
   } else {
     bgMusic.pause();
-    playPauseBtn.innerText = "▶️ Play";
   }
+  updatePlayPauseButton();
 }
 // Volume slider
 volumeSlider.addEventListener("input", () => {
   bgMusic.volume = volumeSlider.value;
   volumePercentage.innerText = Math.round(volumeSlider.value * 100) + "%";
 });
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  //when the user first interacts with the page, start music & update button
+    document.addEventListener("click", () => {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => {});
+    updatePlayPauseButton(); // fixes initial state
+  }
+}, { once: true });
+
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     
     if (isMobile) {
@@ -397,7 +435,6 @@ setTimeout(() => {
       resizeGameCanvas();
       blocks = [];
       setupBlockSpawnRate();
-      playMusic();
       numPlayers = playersCount;
       winMessage = "";
       if (numPlayers === 1) { score = 0; groundBlockCount = 0; }
@@ -412,7 +449,9 @@ setTimeout(() => {
       canvas.style.display = "block";
       document.getElementById("message").innerText = "";
       gameRunning = true;
-      bgMusic.play();  
+      if (!bgMusic.paused) {
+      bgMusic.play().catch(() => {});
+      }  
       document.getElementById("gameOverUI").style.display = "none";
       const musicControls = document.querySelector('.musicControls');
       if (musicControls){
