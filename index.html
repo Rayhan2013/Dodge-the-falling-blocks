@@ -142,14 +142,17 @@
 }
 body.mobile .dpad {
   display: flex; /* Show D-Pad in mobile mode */
+  transform: none;
 }
 
 #dpad1 {
   left: 20px;   /* Adjust positioning for Player 1 */
+  right: auto;
 }
 
 #dpad2 {
   right: 20px;  /* Adjust positioning for Player 2 */
+  left: auto;
 }
 
 body.mobile #dpad1, body.mobile #dpad2 {
@@ -164,15 +167,29 @@ body.mobile #dpad1, body.mobile #dpad2 {
     <div id="introMessage">Made by Rayhan Sonic Studios</div>
   </div>
 
-  <!-- Menu -->
+  <!-- Main Menu -->
+<div id="mainMenu" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; z-index: 2;">
+  <h1>Dodge the Falling Blocks!</h1>
+  <button id="mainPlayBtn">Play</button>
+  <button onclick="toggleControls()">Show Controls</button>
+  <button onclick="toggleMusicCredits()">Music Credits</button>
+</div>
 
+  <!-- New Play Menu -->
+<div id="playMenu" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+  <h1>Play Menu</h1>
+  <button id="playOnlineBtn">Play Online</button>
+  <button id="playLocalBtn">Play Local</button>
+  <button id="backToMenuBtn">Back</button>
+</div>
+
+  <!-- Choose players -->
   <div id="menu" style="display: none;">
-    <h1>Dodge the Falling Blocks!</h1>
+    <h1>Choose Players</h1>
     <button onclick="startGame(1)">Single Player</button>
     <button onclick="startGame(2)">2 Players</button>
     <button id="threePlayerBtn" onclick="startGame(3)">3 Players</button>
-    <button onclick="toggleMusicCredits()">Music Credits</button>
-    <button onclick="toggleControls()">Show Controls</button>
+    <button id="backToPlayMenuBtn">Back</button>
   </div>
  
   <!-- moblie restart and menu buttons -->
@@ -199,13 +216,20 @@ body.mobile #dpad1, body.mobile #dpad2 {
      background-color: rgba(0,0,0,0.9); color:white; z-index: 4; flex-direction: column; align-items: center; justify-content: center;">
   <h2>Music Credits</h2>
   <ul style="list-style:none; text-align:left; font-size:20px;">
-    <li>BackOnTrack made by DJVI</li>
+    <li>Back On Track made by DJVI</li>
     <li>xStep made by DJVI</li>
     <li>New Adventure made by Matrika</li>
   </ul>
   <button onclick="toggleMusicCredits()">Close</button>
 </div>
-
+<!-- Play Online Coming Soon Overlay -->
+<div id="playOnlineOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); color: white; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 10;">
+  <h2>Online Mode</h2>
+  <p>Coming soon!</p>
+  <button onclick="togglePlayOnlineOverlay()">Close</button>
+</div>
   <!-- Player 1 D-Pad -->
 <div id="dpad1" class="dpad">
   <div style="display:flex; flex-direction: column; align-items:center;">
@@ -262,8 +286,49 @@ body.mobile #dpad1, body.mobile #dpad2 {
           playPauseBtn = document.getElementById("playPauseBtn"),
           volumeSlider = document.getElementById("volumeSlider"),
           volumePercentage = document.getElementById("volumePercentage"),
-          musicCreditsOverlay = document.getElementById("musicCreditsOverlay");
-      // music credits
+          musicCreditsOverlay = document.getElementById("musicCreditsOverlay"),
+          mainMenu = document.getElementById("mainMenu"),
+          mainPlayBtn = document.getElementById("mainPlayBtn"),
+          playMenu = document.getElementById("playMenu"),
+          playOnlineBtn = document.getElementById("playOnlineBtn"),
+          playLocalBtn = document.getElementById("playLocalBtn"),
+          backToMenuBtn = document.getElementById("backToMenuBtn"),
+          backToPlayMenuBtn = document.getElementById("backToPlayMenuBtn"),
+          playOnlineOverlay = document.getElementById("playOnlineOverlay");
+    function togglePlayOnlineOverlay() {
+  if (playOnlineOverlay.style.display === "flex") {
+    playOnlineOverlay.style.display = "none";
+  } else {
+    playOnlineOverlay.style.display = "flex";
+  }
+}
+  // Back button in Choose Players
+  backToPlayMenuBtn.addEventListener("click", () => {
+  menu.style.display = "none";
+  playMenu.style.display = "flex";
+  });
+    // Back button
+backToMenuBtn.addEventListener("click", () => {
+  playMenu.style.display = "none";
+  mainMenu.style.display = "flex";
+});
+
+// Play local button -> goes to "Choose Players" menu
+playLocalBtn.addEventListener("click", () => {
+  playMenu.style.display = "none";
+  menu.style.display = "flex"; // This is the "Choose Players" menu
+});
+
+// Play online button -> not implemented yet
+playOnlineBtn.addEventListener("click", () => {
+  togglePlayOnlineOverlay();
+});
+  
+  mainPlayBtn.addEventListener("click", () => {
+  mainMenu.style.display = "none";
+  playMenu.style.display = "flex";
+});
+  // music credits
   function toggleMusicCredits() {
   if (musicCreditsOverlay.style.display === "flex") {
     musicCreditsOverlay.style.display = "none";
@@ -409,7 +474,7 @@ setTimeout(() => {
   });
   
   
-  menu.style.display = "flex";
+  mainMenu.style.display = "flex";
 }, 3000);
     // ==== END NEW ====
 
@@ -674,7 +739,7 @@ setTimeout(() => {
 
     function returnToMenu() {
       canvas.style.display="none";
-      menu.style.display="flex";
+      mainMenu.style.display="flex";
       introScreen.style.display="none";
     if (isMobile) {
     document.getElementById("gameOverUI").style.display = "none";
